@@ -20,7 +20,7 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   * { box-sizing: inherit; }
-  html { scroll-behavior: smooth; scroll-padding-top: calc(56px + env(safe-area-inset-top, 0px)); }
+  html { scroll-behavior: smooth; scroll-padding-top: env(safe-area-inset-top, 0px); }
   body {
     margin: 0;
     background: var(--paper);
@@ -199,16 +199,6 @@
 </style>
 </head>
 <body>
-
-<nav>
-  <div class="wrap">
-    <div class="navlinks">
-      <a href="#cardapio">Cardápio</a>
-      <a href="#sobre">Sobre</a>
-      <a href="#onde">Onde estamos</a>
-    </div>
-  </div>
-</nav>
 
 <header class="hero" id="top">
   <h1 class="sr-only">Bem-vindo ao Ponto 10</h1>
