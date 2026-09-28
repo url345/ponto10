@@ -173,6 +173,15 @@
   .check-row input { width: 18px; height: 18px; flex-shrink: 0; }
   .check-row .check-price { margin-left: auto; color: var(--ink-soft); font-size: 0.85rem; }
 
+
+  /* HERO banner */
+  .hero-banner { display: block; width: 100%; height: auto; border-radius: 14px; margin: 0 0 18px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+  /* CHECKOUT: banner e taxa */
+  .checkout-banner { display: block; width: 100%; height: auto; border-radius: 12px; margin: 4px 0 6px; }
+  .delivery-fee { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; padding: 10px 12px; border: 1px dashed var(--ink); border-radius: 10px; font-size: 0.88rem; font-weight: 700; }
+
   /* PIX */
   .pix-card { text-align: center; padding: 4px 0 2px; }
   .pix-qr-wrap { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 10px; width: min(54vw, 190px); margin: 0 auto 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.07); }
@@ -203,8 +212,8 @@
 
 <header class="hero" id="top">
   <div class="wrap">
-    <h1>Bem-vindo ao Ponto 10</h1>
-    <p class="tag">Lanches feitos na hora, ingredientes fresquinhos e aquele capricho de quem gosta de cozinhar.</p>
+    <h1 class="sr-only">Bem-vindo ao Ponto 10</h1>
+    <img class="hero-banner" src="file_00000000d044820e8fc81d47b10346e7_compress_compress.png" alt="Bem-vindo ao Ponto 10">
     <div class="hero-actions">
       <a class="btn" href="#cardapio">Ver cardápio</a>
       <button class="btn outline" id="pedir-aqui-btn">Pedir aqui</button>
@@ -458,11 +467,12 @@
     <div id="cart-items"></div>
     <div class="cart-total-row" id="cart-total-row"><span>Total</span><span id="cart-modal-total">R$ 0,00</span></div>
     <div id="checkout-form">
+      <img class="checkout-banner" src="file_00000000d044820e8fc81d47b10346e7_compress_compress.png" alt="Ponto 10">
       <label class="cart-field">Nome
         <input id="cust-name" type="text" placeholder="Seu nome" autocomplete="name">
       </label>
       <label class="cart-field">WhatsApp
-        <input id="cust-phone" type="tel" placeholder="(00) 00000-0000" autocomplete="tel">
+        <input id="cust-phone" type="tel" inputmode="numeric" maxlength="15" placeholder="(00) 00000-0000" autocomplete="tel">
       </label>
       <label class="cart-field">Rua
         <input id="cust-street" type="text" placeholder="Nome da rua">
@@ -473,6 +483,7 @@
       <label class="cart-field">Bairro
         <input id="cust-neighborhood" type="text" placeholder="Bairro">
       </label>
+      <div class="delivery-fee"><span>🛵 Taxa do nosso entregador</span><span>R$ 3,50</span></div>
       <p class="cart-error" id="cart-error">Preencha os campos em vermelho para continuar.</p>
       <button class="btn" id="checkout-btn">Confirmar pagamento</button>
       <p class="cart-note">O pedido é montado aqui e o Pix é gerado na hora.</p>
@@ -717,6 +728,14 @@
       this.classList.remove('field-error');
     });
   });
+  document.getElementById('cust-phone').addEventListener('input', function () {
+    var d = this.value.replace(/\D/g, '').slice(0, 11);
+    var out = d;
+    if (d.length > 6) out = '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
+    else if (d.length > 2) out = '(' + d.slice(0, 2) + ') ' + d.slice(2);
+    else if (d.length > 0) out = '(' + d;
+    this.value = out;
+  });
   document.getElementById('cart-overlay').addEventListener('click', function (e) {
     if (e.target.id === 'cart-overlay') closeModal();
   });
@@ -744,13 +763,16 @@
     [nameEl, phoneEl, streetEl, numberEl, neighborhoodEl].forEach(function (el) { el.classList.remove('field-error'); });
     var missing = false;
     if (!name) { nameEl.classList.add('field-error'); missing = true; }
-    if (!phone) { phoneEl.classList.add('field-error'); missing = true; }
+    var phoneDigits = phone.replace(/\D/g, '');
+    var phoneBad = phoneDigits.length !== 11;
+    if (phoneBad) { phoneEl.classList.add('field-error'); missing = true; }
     if (!street) { streetEl.classList.add('field-error'); missing = true; }
     if (!number) { numberEl.classList.add('field-error'); missing = true; }
     if (!neighborhood) { neighborhoodEl.classList.add('field-error'); missing = true; }
 
     if (missing) {
-      errorEl.textContent = 'Preencha os campos em vermelho para continuar.';
+      var onlyPhone = phoneBad && phoneDigits.length > 0 && name && street && number && neighborhood;
+      errorEl.textContent = onlyPhone ? 'Digite o WhatsApp com DDD: são 11 números.' : 'Preencha os campos em vermelho para continuar.';
       errorEl.classList.add('show');
       return;
     }
