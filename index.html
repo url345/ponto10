@@ -125,8 +125,7 @@
     cursor: pointer;
     box-shadow: 0 3px 12px rgba(0,0,0,0.35);
   }
-  .cart-bar-btn svg { width: 26px; height: 26px; }
-  .cart-bar-btn .burger-icon { font-size: 28px; line-height: 1; }
+  .cart-bar-btn svg { width: 28px; height: 28px; }
   .cart-badge {
     position: absolute;
     top: -6px; right: -6px;
@@ -442,7 +441,7 @@
 <!-- CART BAR -->
 <div class="cart-bar hidden" id="cart-bar">
   <button class="cart-bar-btn" id="cart-bar-btn" aria-label="Ver sacola">
-    <span class="burger-icon">🍔</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.5 3h2l2.6 12.6a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 7H6"/></svg>
     <span class="cart-badge" id="cart-count">0</span>
   </button>
 </div>
@@ -535,6 +534,7 @@
   function saveCart() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cart)); } catch (e) {}
   }
+  var DELIVERY_FEE = 3.5;
   function fmt(n) { return 'R$ ' + n.toFixed(2).replace('.', ','); }
   function cartTotal() {
     var total = 0;
@@ -577,7 +577,7 @@
         '</div>';
       }).join('');
     }
-    document.getElementById('cart-modal-total').textContent = fmt(cartTotal());
+    document.getElementById('cart-modal-total').textContent = fmt(cartTotal() + (names.length ? DELIVERY_FEE : 0));
   }
   function addItem(name, price) {
     if (!cart[name]) cart[name] = { price: price, qty: 0 };
@@ -773,8 +773,8 @@
       var it = cart[n];
       itemLines.push(it.qty + 'x ' + n);
     });
-    var total = cartTotal();
-    var description = 'Pedido Ponto 10: ' + itemLines.join(', ');
+    var total = cartTotal() + DELIVERY_FEE;
+    var description = 'Pedido Ponto 10: ' + itemLines.join(', ') + ' + taxa de entrega';
 
     var checkoutBtn = document.getElementById('checkout-btn');
     checkoutBtn.disabled = true;
