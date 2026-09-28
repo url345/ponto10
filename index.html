@@ -439,11 +439,11 @@
 <div class="cart-overlay hidden" id="cart-overlay">
   <div class="cart-modal">
     <div class="cart-modal-header">
-      <h3>Sua sacola</h3>
+      <h3>🛒 Seu pedido está aqui</h3>
       <button class="cart-close-btn" id="cart-close" aria-label="Fechar">&times;</button>
     </div>
     <div id="cart-items"></div>
-    <div class="cart-total-row"><span>Total</span><span id="cart-modal-total">R$ 0,00</span></div>
+    <div class="cart-total-row" id="cart-total-row"><span>Total</span><span id="cart-modal-total">R$ 0,00</span></div>
     <div id="checkout-form">
       <label class="cart-field">Nome
         <input id="cust-name" type="text" placeholder="Seu nome" autocomplete="name">
@@ -461,14 +461,15 @@
         <input id="cust-neighborhood" type="text" placeholder="Bairro">
       </label>
       <p class="cart-error" id="cart-error">Preencha os campos em vermelho para continuar.</p>
-      <button class="btn" id="checkout-btn">Gerar Pix para pagamento</button>
+      <button class="btn" id="checkout-btn">Confirmar pagamento</button>
       <p class="cart-note">O pedido é montado aqui e o Pix é gerado na hora.</p>
     </div>
     <div id="pix-box" class="hidden">
-      <p style="font-weight:700; margin-bottom: 10px;">Escaneie ou copie o código Pix:</p>
-      <img id="pix-qr" alt="QR Code Pix" style="width:100%; max-width:220px; display:block; margin:0 auto 12px;">
-      <textarea id="pix-code" rows="3" readonly style="width:100%; padding:10px; border:1px solid var(--line); border-radius:8px; font-size:0.8rem;"></textarea>
-      <button class="btn" id="pix-copy-btn" style="width:100%; margin-top:10px;">Copiar código Pix</button>
+      <p style="font-weight:700; margin-bottom: 8px;">Pague com Pix</p>
+      <img id="pix-qr" alt="QR Code Pix" style="width:100%; max-width:160px; display:block; margin:0 auto 10px;">
+      <p style="font-size:0.75rem; color: var(--ink-soft); margin:0 0 4px;">Pix copia e cola</p>
+      <textarea id="pix-code" rows="2" readonly style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:8px; font-size:0.7rem; resize:none;"></textarea>
+      <button class="btn" id="pix-copy-btn" style="width:100%; margin-top:8px; padding:10px 16px; font-size:0.9rem;">Copiar Pix</button>
       <p class="cart-note" id="pix-status">Aguardando confirmação do pagamento...</p>
     </div>
     <p class="cart-note hidden" id="order-confirmed"></p>
@@ -576,6 +577,7 @@
   }
   function openModal() {
     renderModal();
+    document.getElementById('cart-total-row').style.display = '';
     document.getElementById('checkout-form').classList.remove('hidden');
     document.getElementById('order-confirmed').classList.add('hidden');
     document.getElementById('pix-box').classList.add('hidden');
@@ -731,6 +733,7 @@
     if (!neighborhood) { neighborhoodEl.classList.add('field-error'); missing = true; }
 
     if (missing) {
+      errorEl.textContent = 'Preencha os campos em vermelho para continuar.';
       errorEl.classList.add('show');
       return;
     }
@@ -746,7 +749,7 @@
 
     var checkoutBtn = document.getElementById('checkout-btn');
     checkoutBtn.disabled = true;
-    checkoutBtn.textContent = 'Gerando Pix...';
+    checkoutBtn.textContent = 'Confirmando...';
 
     fetch('/api/charge', {
       method: 'POST',
@@ -764,7 +767,7 @@
       .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
       .then(function (result) {
         checkoutBtn.disabled = false;
-        checkoutBtn.textContent = 'Gerar Pix para pagamento';
+        checkoutBtn.textContent = 'Confirmar pagamento';
 
         if (!result.ok) {
           errorEl.textContent = 'Não foi possível gerar o Pix. Tente novamente.';
@@ -777,36 +780,52 @@
         renderBar();
 
         document.getElementById('checkout-form').classList.add('hidden');
+        document.getElementById('cart-items').innerHTML = '';
+        document.getElementById('cart-total-row').style.display = 'none';
         var pixBox = document.getElementById('pix-box');
         pixBox.classList.remove('hidden');
         document.getElementById('pix-code').value = result.data.pix_copy_paste || '';
         if (result.data.qr_code_image) {
           document.getElementById('pix-qr').src = result.data.qr_code_image;
         }
-        if (!result.data.pix_copy_paste) {
-          document.getElementById('pix-status').innerHTML =
-            '<strong>[DEBUG temporário]</strong> Resposta da NovaPay:<br><pre style="white-space:pre-wrap;font-size:0.7rem;text-align:left;">' +
-            escapeHtml(JSON.stringify(result.data.raw, null, 2)) + '</pre>';
+        if (copyPix()) {
+          document.getElementById('pix-status').textContent = 'Código Pix copiado! Cole no app do seu banco. Aguardando confirmação do pagamento...';
         }
       })
       .catch(function () {
         checkoutBtn.disabled = false;
-        checkoutBtn.textContent = 'Gerar Pix para pagamento';
+        checkoutBtn.textContent = 'Confirmar pagamento';
         errorEl.textContent = 'Erro de conexão. Tente novamente.';
         errorEl.classList.add('show');
       });
   });
 
-  document.getElementById('pix-copy-btn').addEventListener('click', function () {
+  function copyPix() {
     var codeEl = document.getElementById('pix-code');
-    codeEl.select();
+    var text = codeEl.value;
+    if (!text) return false;
+    var ok = false;
     try {
-      navigator.clipboard.writeText(codeEl.value);
-      var btn = document.getElementById('pix-copy-btn');
-      var original = btn.textContent;
-      btn.textContent = 'Copiado!';
-      setTimeout(function () { btn.textContent = original; }, 1500);
-    } catch (e) {}
+      codeEl.focus();
+      codeEl.select();
+      codeEl.setSelectionRange(0, text.length);
+      ok = document.execCommand('copy');
+    } catch (e) { ok = false; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(function () {});
+      ok = true;
+    }
+    return ok;
+  }
+
+  document.getElementById('pix-copy-btn').addEventListener('click', function () {
+    var btn = document.getElementById('pix-copy-btn');
+    var original = 'Copiar Pix';
+    if (copyPix()) {
+      btn.textContent = 'Pix copiado!';
+      document.getElementById('pix-status').textContent = 'Código Pix copiado! Cole no app do seu banco. Aguardando confirmação do pagamento...';
+      setTimeout(function () { btn.textContent = original; }, 1800);
+    }
   });
 
   loadCart();
