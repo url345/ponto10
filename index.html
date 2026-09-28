@@ -173,6 +173,19 @@
   .check-row input { width: 18px; height: 18px; flex-shrink: 0; }
   .check-row .check-price { margin-left: auto; color: var(--ink-soft); font-size: 0.85rem; }
 
+  /* PIX */
+  .pix-card { text-align: center; padding: 4px 0 2px; }
+  .pix-qr-wrap { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 10px; width: min(54vw, 190px); margin: 0 auto 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.07); }
+  .pix-qr-wrap img { width: 100%; aspect-ratio: 1 / 1; display: block; border-radius: 8px; }
+  .pix-label { display: block; text-align: left; font-size: 0.72rem; font-weight: 700; color: var(--ink-soft); margin: 0 0 4px 2px; }
+  .pix-field { display: block; width: 100%; height: 40px; padding: 0 12px; border: 1.5px solid var(--line); border-radius: 12px; background: #F6F7F8; color: var(--ink); font: 0.7rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; -webkit-user-select: none; user-select: none; }
+  .pix-btn { width: 100%; min-height: 50px; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 12px; background: #00A88E; color: #fff; font-size: 0.98rem; font-weight: 700; cursor: pointer; box-shadow: 0 6px 14px rgba(0,168,142,0.3); -webkit-tap-highlight-color: transparent; }
+  .pix-btn:active { transform: scale(0.98); }
+  .pix-btn svg { width: 18px; height: 18px; }
+  .pix-btn.copied { background: #111; box-shadow: none; }
+  .pix-toast { min-height: 18px; margin-top: 8px; font-size: 0.85rem; font-weight: 700; color: #0A8F79; opacity: 0; transition: opacity 0.2s; }
+  .pix-toast.show { opacity: 1; }
+
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 </style>
 </head>
@@ -465,12 +478,16 @@
       <p class="cart-note">O pedido é montado aqui e o Pix é gerado na hora.</p>
     </div>
     <div id="pix-box" class="hidden">
-      <p style="font-weight:700; margin-bottom: 8px;">Pague com Pix</p>
-      <img id="pix-qr" alt="QR Code Pix" style="width:100%; max-width:160px; display:block; margin:0 auto 10px;">
-      <p style="font-size:0.75rem; color: var(--ink-soft); margin:0 0 4px;">Pix copia e cola</p>
-      <textarea id="pix-code" rows="2" readonly style="width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:8px; font-size:0.7rem; resize:none;"></textarea>
-      <button class="btn" id="pix-copy-btn" style="width:100%; margin-top:8px; padding:10px 16px; font-size:0.9rem;">Copiar Pix</button>
-      <p class="cart-note" id="pix-status">Aguardando confirmação do pagamento...</p>
+      <div class="pix-card">
+        <div class="pix-qr-wrap"><img id="pix-qr" alt="QR Code Pix"></div>
+        <label class="pix-label" for="pix-code">Pix copia e cola</label>
+        <input id="pix-code" class="pix-field" type="text" readonly tabindex="-1" aria-label="Código Pix copia e cola">
+        <button class="pix-btn" id="pix-copy-btn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+          <span id="pix-btn-label">Copiar Pix</span>
+        </button>
+        <p class="pix-toast" id="pix-toast" role="status">Pix copiado!</p>
+      </div>
     </div>
     <p class="cart-note hidden" id="order-confirmed"></p>
   </div>
@@ -788,9 +805,7 @@
         if (result.data.qr_code_image) {
           document.getElementById('pix-qr').src = result.data.qr_code_image;
         }
-        if (copyPix()) {
-          document.getElementById('pix-status').textContent = 'Código Pix copiado! Cole no app do seu banco. Aguardando confirmação do pagamento...';
-        }
+        document.getElementById('pix-toast').classList.remove('show');
       })
       .catch(function () {
         checkoutBtn.disabled = false;
@@ -801,15 +816,19 @@
   });
 
   function copyPix() {
-    var codeEl = document.getElementById('pix-code');
-    var text = codeEl.value;
+    var text = document.getElementById('pix-code').value;
     if (!text) return false;
     var ok = false;
     try {
-      codeEl.focus();
-      codeEl.select();
-      codeEl.setSelectionRange(0, text.length);
+      var tmp = document.createElement('textarea');
+      tmp.value = text;
+      tmp.setAttribute('readonly', '');
+      tmp.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px;';
+      document.body.appendChild(tmp);
+      tmp.select();
+      tmp.setSelectionRange(0, text.length);
       ok = document.execCommand('copy');
+      document.body.removeChild(tmp);
     } catch (e) { ok = false; }
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).catch(function () {});
@@ -818,14 +837,20 @@
     return ok;
   }
 
+  var pixTimer = null;
   document.getElementById('pix-copy-btn').addEventListener('click', function () {
     var btn = document.getElementById('pix-copy-btn');
-    var original = 'Copiar Pix';
-    if (copyPix()) {
-      btn.textContent = 'Pix copiado!';
-      document.getElementById('pix-status').textContent = 'Código Pix copiado! Cole no app do seu banco. Aguardando confirmação do pagamento...';
-      setTimeout(function () { btn.textContent = original; }, 1800);
-    }
+    if (!copyPix()) return;
+    var toast = document.getElementById('pix-toast');
+    btn.classList.add('copied');
+    document.getElementById('pix-btn-label').textContent = 'Pix copiado!';
+    toast.classList.add('show');
+    clearTimeout(pixTimer);
+    pixTimer = setTimeout(function () {
+      btn.classList.remove('copied');
+      document.getElementById('pix-btn-label').textContent = 'Copiar Pix';
+      toast.classList.remove('show');
+    }, 2200);
   });
 
   loadCart();
