@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Painel — Ponto 10</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #111111;
+    --ink-soft: #666666;
+    --paper: #FFFFFF;
+    --line: #E4E4E4;
+    color-scheme: light;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: inherit; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: 'Karla', system-ui, sans-serif; font-size: 16px; line-height: 1.5; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 20px 20px calc(40px + env(safe-area-inset-bottom, 0px)); }
+  h1 { font-size: 1.3rem; margin: 0 0 4px; }
+  .sub { color: var(--ink-soft); font-size: 0.85rem; margin: 0 0 20px; }
+  .btn { display: inline-block; background: var(--ink); color: var(--paper); border: 1px solid var(--ink); border-radius: 8px; font-weight: 700; padding: 12px 20px; cursor: pointer; font-size: 1rem; }
+  .btn:hover { opacity: 0.85; }
+  .btn.small { padding: 7px 12px; font-size: 0.8rem; border-radius: 20px; }
+  .btn.outline { background: transparent; color: var(--ink); }
+
+  /* LOGIN */
+  #login-screen { max-width: 340px; margin: 15vh auto 0; padding: 0 20px; }
+  #login-screen h1 { text-align: center; margin-bottom: 20px; }
+  .field { display: block; font-size: 0.85rem; font-weight: 700; margin-top: 14px; }
+  .field input { display: block; width: 100%; margin-top: 6px; padding: 11px; border: 1px solid var(--line); border-radius: 8px; font-size: 1rem; font-family: inherit; }
+  #login-error { color: #D32F2F; font-size: 0.85rem; font-weight: 700; margin-top: 12px; display: none; }
+  #login-error.show { display: block; }
+  #login-screen .btn { width: 100%; margin-top: 18px; }
+
+  /* HEADER */
+  .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+
+  /* SUMMARY */
+  .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 22px; }
+  .summary-card { border: 1px solid var(--line); border-radius: 10px; padding: 12px; text-align: center; }
+  .summary-card .num { font-size: 1.5rem; font-weight: 700; display: block; }
+  .summary-card .label { font-size: 0.72rem; color: var(--ink-soft); }
+
+  /* FILTERS */
+  .filters { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px; padding-bottom: 4px; }
+  .filters::-webkit-scrollbar { display: none; }
+  .filter-btn { flex-shrink: 0; border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 20px; padding: 7px 14px; font-size: 0.82rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .filter-btn.active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+
+  /* ORDERS */
+  .order-card { border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .order-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .order-number { font-weight: 700; }
+  .order-time { font-size: 0.78rem; color: var(--ink-soft); }
+  .order-customer { font-weight: 700; margin-bottom: 2px; }
+  .order-phone { font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 6px; }
+  .order-address { font-size: 0.88rem; margin-bottom: 8px; display: flex; gap: 6px; align-items: flex-start; }
+  .order-items { font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 8px; }
+  .order-total-row { display: flex; justify-content: space-between; font-weight: 700; padding-top: 8px; border-top: 1px solid var(--line); margin-bottom: 10px; }
+  .status-badge { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .status-novo { background: #FFF3CD; color: #8A6D00; }
+  .status-saiu { background: #DDEBFF; color: #0B4C9C; }
+  .status-entregue { background: #DFF5E1; color: #1A7A2E; }
+  .status-cancelado { background: #FDE0E0; color: #B42318; }
+  .order-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .empty { text-align: center; color: var(--ink-soft); padding: 40px 0; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <h1>Painel — Ponto 10</h1>
+  <label class="field">Usuário
+    <input id="login-user" type="text" autocomplete="username">
+  </label>
+  <label class="field">Senha
+    <input id="login-pass" type="password" autocomplete="current-password">
+  </label>
+  <p id="login-error">Usuário ou senha incorretos.</p>
+  <button class="btn" id="login-btn">Entrar</button>
+</div>
+
+<div id="panel-screen" class="wrap hidden">
+  <div class="top-bar">
+    <div>
+      <h1>Pedidos — Ponto 10</h1>
+      <p class="sub">Atualiza sozinho a cada 10 segundos</p>
+    </div>
+    <button class="btn outline small" id="logout-btn">Sair</button>
+  </div>
+
+  <div class="summary">
+    <div class="summary-card"><span class="num" id="sum-hoje">0</span><span class="label">Pedidos hoje</span></div>
+    <div class="summary-card"><span class="num" id="sum-saiu">0</span><span class="label">Saíram p/ entrega</span></div>
+    <div class="summary-card"><span class="num" id="sum-entregue">0</span><span class="label">Entregues</span></div>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" data-status="todos">Todos</button>
+    <button class="filter-btn" data-status="novo">Novos</button>
+    <button class="filter-btn" data-status="entrega">Saiu p/ entrega</button>
+    <button class="filter-btn" data-status="entregue">Entregues</button>
+    <button class="filter-btn" data-status="cancelado">Cancelados</button>
+  </div>
+
+  <div id="orders-list"></div>
+</div>
+
+<script>
+(function () {
+  var currentFilter = 'todos';
+  var pollTimer = null;
+
+  function api(path, opts) {
+    return fetch(path, Object.assign({ credentials: 'same-origin' }, opts || {}))
+      .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, status: r.status, data: data }; }); });
+  }
+
+  function fmt(n) { return 'R$ ' + Number(n).toFixed(2).replace('.', ','); }
+  function fmtTime(iso) {
+    var d = new Date(iso);
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+  function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  var STATUS_LABEL = { novo: 'Novo', entrega: 'Saiu p/ entrega', entregue: 'Entregue', cancelado: 'Cancelado' };
+  var STATUS_CLASS = { novo: 'status-novo', entrega: 'status-saiu', entregue: 'status-entregue', cancelado: 'status-cancelado' };
+
+  function showLogin() {
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('panel-screen').classList.add('hidden');
+    clearInterval(pollTimer);
+  }
+  function showPanel() {
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('panel-screen').classList.remove('hidden');
+    loadOrders();
+    clearInterval(pollTimer);
+    pollTimer = setInterval(loadOrders, 10000);
+  }
+
+  document.getElementById('login-btn').addEventListener('click', function () {
+    var user = document.getElementById('login-user').value.trim();
+    var pass = document.getElementById('login-pass').value;
+    var errEl = document.getElementById('login-error');
+    errEl.classList.remove('show');
+    api('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pass }),
+    }).then(function (result) {
+      if (result.ok) {
+        showPanel();
+      } else {
+        errEl.textContent = (result.data && result.data.error) || 'Usuário ou senha incorretos.';
+        errEl.classList.add('show');
+      }
+    });
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', function () {
+    api('/api/admin/logout', { method: 'POST' }).then(showLogin);
+  });
+
+  document.querySelectorAll('.filter-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentFilter = btn.getAttribute('data-status');
+      loadOrders();
+    });
+  });
+
+  function renderSummary(orders) {
+    var today = new Date().toDateString();
+    var hoje = orders.filter(function (o) { return new Date(o.created_at).toDateString() === today; }).length;
+    var saiu = orders.filter(function (o) { return o.status === 'entrega'; }).length;
+    var entregue = orders.filter(function (o) { return o.status === 'entregue'; }).length;
+    document.getElementById('sum-hoje').textContent = hoje;
+    document.getElementById('sum-saiu').textContent = saiu;
+    document.getElementById('sum-entregue').textContent = entregue;
+  }
+
+  function nextActions(status) {
+    if (status === 'novo') return [{ to: 'entrega', label: 'Saiu p/ entrega' }, { to: 'cancelado', label: 'Cancelar' }];
+    if (status === 'entrega') return [{ to: 'entregue', label: 'Marcar entregue' }, { to: 'cancelado', label: 'Cancelar' }];
+    return [];
+  }
+
+  function renderOrders(orders) {
+    var list = document.getElementById('orders-list');
+    if (orders.length === 0) {
+      list.innerHTML = '<p class="empty">Nenhum pedido por aqui ainda.</p>';
+      return;
+    }
+    list.innerHTML = orders.map(function (o) {
+      var items = (o.items || []).map(function (it) { return it.qty + 'x ' + it.name; }).join(', ');
+      var actions = nextActions(o.status).map(function (a) {
+        return '<button class="btn small status-btn" data-id="' + o.id + '" data-to="' + a.to + '">' + a.label + '</button>';
+      }).join('');
+      return '' +
+        '<div class="order-card">' +
+          '<div class="order-top">' +
+            '<span class="order-number">#' + escapeHtml(o.order_number) + '</span>' +
+            '<span class="status-badge ' + (STATUS_CLASS[o.status] || '') + '">' + (STATUS_LABEL[o.status] || o.status) + '</span>' +
+          '</div>' +
+          '<div class="order-time">' + fmtTime(o.created_at) + '</div>' +
+          '<div style="height:8px"></div>' +
+          '<div class="order-customer">' + escapeHtml(o.customer_name) + '</div>' +
+          '<div class="order-phone">' + escapeHtml(o.customer_phone) + '</div>' +
+          '<div class="order-address">📍 ' + escapeHtml(o.address) + '</div>' +
+          '<div class="order-items">' + escapeHtml(items) + '</div>' +
+          '<div class="order-total-row"><span>Total</span><span>' + fmt(o.total) + '</span></div>' +
+          '<div class="order-actions">' + actions + '</div>' +
+        '</div>';
+    }).join('');
+
+    list.querySelectorAll('.status-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-id');
+        var to = btn.getAttribute('data-to');
+        btn.disabled = true;
+        api('/api/admin/orders/' + id, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: to }),
+        }).then(function () { loadOrders(); });
+      });
+    });
+  }
+
+  function loadOrders() {
+    api('/api/admin/orders?status=' + encodeURIComponent(currentFilter)).then(function (result) {
+      if (!result.ok) {
+        if (result.status === 401) showLogin();
+        return;
+      }
+      var orders = result.data.orders || [];
+      renderOrders(orders);
+      if (currentFilter === 'todos') renderSummary(orders);
+    });
+  }
+
+  // ao abrir a página, verifica se já tem sessão válida
+  api('/api/admin/me').then(function (result) {
+    if (result.ok) showPanel();
+    else showLogin();
+  });
+})();
+</script>
+
+</body>
+</html>
