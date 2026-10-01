@@ -769,11 +769,14 @@
     errorEl.classList.remove('show');
 
     var itemLines = [];
+    var structuredItems = [];
     Object.keys(cart).forEach(function (n) {
       var it = cart[n];
       itemLines.push(it.qty + 'x ' + n);
+      structuredItems.push({ name: n, qty: it.qty, price: it.price });
     });
-    var total = cartTotal() + DELIVERY_FEE;
+    var subtotal = cartTotal();
+    var total = subtotal + DELIVERY_FEE;
     var description = 'Pedido Ponto 10: ' + itemLines.join(', ') + ' + taxa de entrega';
 
     var checkoutBtn = document.getElementById('checkout-btn');
@@ -785,7 +788,10 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         amount: total,
+        subtotal: subtotal,
+        deliveryFee: DELIVERY_FEE,
         description: description,
+        items: structuredItems,
         customer: {
           name: name,
           phone: phone,
