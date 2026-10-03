@@ -428,11 +428,12 @@
       </div>
       <div class="info-item">
         <h4>Horário</h4>
-        <p>Das 6h às 2h</p>
+        <p id="status-aberto" style="font-weight:700; margin-bottom:4px;"></p>
+        <p>Das 18h às 2h</p>
       </div>
       <div class="info-item">
         <h4>Redes</h4>
-        <p>@ponto10</p>
+        <p>@ponto10llanches</p>
       </div>
     </div>
   </div>
@@ -873,6 +874,16 @@
 
   loadCart();
   renderBar();
+
+  (function updateOpenStatus() {
+    var hour = new Date().getHours();
+    var aberto = hour >= 18 || hour < 2;
+    var el = document.getElementById('status-aberto');
+    if (el) {
+      el.textContent = aberto ? '🟢 Aberto agora' : '🔴 Fechado agora';
+      el.style.color = aberto ? '#1A7A2E' : '#B42318';
+    }
+  })();
 })();
 </script>
 
